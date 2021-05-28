@@ -3,14 +3,16 @@ package io.api.nodes;
 import io.app.App;
 import io.entity.Index;
 import io.entity.Table;
-import io.entity.TestObj;
 import org.apache.log4j.Logger;
+import org.jboss.resteasy.plugins.providers.multipart.InputPart;
+import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.Arrays;
+import java.io.*;
 import java.util.List;
+import java.util.Map;
 
 /**
  * The central node will receive request and will give instructions to the slave nodes
@@ -71,12 +73,46 @@ public class CentralNode {
     }
 
     @POST
-    @Path("/load-csv")
-    //@Consumes(MediaType.)
-    public TestObj loadCSV(TestObj t) {
+    @Path("/tables/{tableName}/csv")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public Response loadCSV(@PathParam("tableName") String tableName,
+                            MultipartFormDataInput input) {
+        logger.debug("Loaded CSV");
 
-        System.out.println(t);
-        return t;
+        //Get API input data
+        Map<String, List<InputPart>> uploadForm = input.getFormDataMap();
+        logger.debug(uploadForm);
+        //Get file name
+        String fileName = "";
+        try {
+            fileName = uploadForm.get("fileName").get(0).getBodyAsString();
+            logger.info("Get the file " + fileName);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        //Get file data to save
+        List<InputPart> inputParts = uploadForm.get("attachment");
+
+        for (InputPart inputPart : inputParts)
+        {
+            try
+            {
+
+                // convert the uploaded file to inputstream
+                InputStream inputStream = inputPart.getBody(InputStream.class, null);
+                BufferedReader bufferReader = new BufferedReader(new InputStreamReader(inputStream));
+                while (bufferReader.ready()) {
+                    bufferReader.readLine();
+                }
+                System.out.println("Success !!!!!");
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+        }
+        return Response.status(Response.Status.OK).build();
     }
 
     @GET
