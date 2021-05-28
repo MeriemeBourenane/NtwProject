@@ -1,11 +1,14 @@
 package io.entity;
 
+import com.google.gson.annotations.Expose;
+
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Objects;
 
 public class TableHeaderColumns implements Serializable {
 
+    @Expose
     private HashMap<String, DataTypes> headerColumns;
 
     public TableHeaderColumns() {

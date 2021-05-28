@@ -1,5 +1,7 @@
 package io.entity;
 
+import com.google.gson.annotations.Expose;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,7 +12,9 @@ import java.util.Objects;
  */
 public class Table implements Serializable {
 
-    private String name = "";
+    @Expose
+    private String name;
+    @Expose
     private TableHeaderColumns tableHeaderColumns;
     private List<TableRow> listRows;
     private List<Index> indexes;

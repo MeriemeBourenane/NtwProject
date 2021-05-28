@@ -19,7 +19,7 @@ import java.lang.reflect.Type;
 @Provider
 public class GsonProvider implements MessageBodyWriter<Object>, MessageBodyReader<Object> {
 
-	private final Gson gson = new GsonBuilder().serializeNulls().create();
+	private final Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().serializeNulls().create();
 
 	@Override
 	public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
@@ -48,7 +48,6 @@ public class GsonProvider implements MessageBodyWriter<Object>, MessageBodyReade
 	@Override
 	public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
 		try (InputStreamReader streamReader = new InputStreamReader(entityStream)) {
-			System.out.println(genericType);
 			return gson.fromJson(streamReader, genericType);
 		}
 	}
