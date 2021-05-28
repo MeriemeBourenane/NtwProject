@@ -24,24 +24,28 @@ public class CentralNode {
     private static Logger logger = Logger.getLogger(CentralNode.class);
 
 
+    public String formatErrorMessage(String message) {
+        return "{ \"error\": \"" + message + "\"}";
+    }
 
     @POST
     @Path("/create-table")
-    public Response.ResponseBuilder createTable(Table table) {
+    public Response createTable(Table table) {
         // the central node will receive the first request
         // processing the request create table
         // forwarding the 2 others : by a request
-        Table tableRes = null;
-
+        logger.debug("Entering /create-table");
         // TODO : verify type od columns
-        if (table != null) {
+        if (table != null
+                && table.getName() != null
+                && table.getTableHeaderColumns() != null) {
+            logger.info("The object is valid");
             this.app.addTable(table);
-            System.out.println(this.app.getTables());
-            return Response.status(200);
+            logger.debug(table);
+            return Response.status(Response.Status.CREATED).build();
         }
-        System.out.println(this.app.getTables());
 
-        return Response.status(400);
+        return Response.status(Response.Status.BAD_REQUEST).entity("The object is invalid").build();
     }
 
     @POST

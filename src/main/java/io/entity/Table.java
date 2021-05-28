@@ -20,22 +20,9 @@ public class Table implements Serializable {
     private List<Index> indexes;
 
     public Table() {
+        this.name = null;
         this.tableHeaderColumns = null;
-        this.listRows = null;
-        this.indexes = new ArrayList<Index>();
-    }
-
-    public Table(String name, TableHeaderColumns tableHeaderColumns) {
-        this.name = name;
-        this.tableHeaderColumns = tableHeaderColumns;
-        this.listRows = null;
-        this.indexes = new ArrayList<Index>();
-    }
-
-    public Table(String name, TableHeaderColumns tableHeaderColumns, List<TableRow> listRows) {
-        this.name = name;
-        this.tableHeaderColumns = tableHeaderColumns;
-        this.listRows = listRows;
+        this.listRows = new ArrayList<>();
         this.indexes = new ArrayList<Index>();
     }
 
