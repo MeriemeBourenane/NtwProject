@@ -49,32 +49,32 @@ public class CentralNode {
     }
 
     @POST
-    @Path("/create-index")
-    public Response.ResponseBuilder createIndex(@QueryParam("nameIndex") String nameIndex,
-                                                @QueryParam("nameTable") String nameTable,
-                                                @QueryParam("fields") List<String> fields) {
+    @Path("/tables/{tableName}/indexes")
+    public Response createIndex(Index index,
+                                @PathParam("tableName") String tableName) {
         // the central node will receive the first request
         // processing the request create index
         // forwarding the 2 others : by a request
-        System.out.println(nameIndex);
-        System.out.println(nameTable);
-        System.out.println(fields);
+        logger.debug("Entering /tables/{tableName}/indexes");
 
-        if (nameIndex != null && nameTable != null && fields != null && this.app.getTableByName(nameTable) != null) {
-            for (String field : fields) {
-                if (!this.app.getTableByName(nameTable).getTableHeaderColumns().getHeaderColumns().containsKey(field)) {
-                    System.out.println("[CentralNode->createIndex] This table doesn't contains the field : " + field);
-                    return Response.status(400);
+        if (this.app.getTableByName(tableName) == null) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(formatErrorMessage("The table does not exist")).build();
+        }
+        if (index.getName() != null && index.getColumnNames() != null) {
+            for (String field : index.getColumnNames()) {
+                if (!this.app.getTableByName(tableName).getTableHeaderColumns().getHeaderColumns().containsKey(field)) {
+                    return Response.status(Response.Status.BAD_REQUEST).entity(formatErrorMessage("This table doesn't contains the field : " + field)).build();
                 }
             }
-            System.out.println("CentralNode->createIndex] Adding index...");
-            this.app.getTableByName(nameTable).addIndex(new Index(nameIndex, fields));
-            System.out.println(this.app.getTables());
+            logger.debug("Adding index...");
+            this.app.getTableByName(tableName).addIndex(index);
 
-            return Response.status(200);
+            logger.debug(this.app.getTables());
+
+            return Response.status(Response.Status.CREATED).build();
         }
 
-        return Response.status(400);
+        return Response.status(Response.Status.BAD_REQUEST).entity(formatErrorMessage("The object is incorrect")).build();
     }
 
     @POST

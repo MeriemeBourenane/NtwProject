@@ -1,5 +1,7 @@
 package io.entity;
 
+import com.google.gson.annotations.Expose;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -10,9 +12,17 @@ import java.util.List;
  */
 public class Index implements Serializable {
 
+    @Expose
     private String name;
+    @Expose
     private List<String> columnNames;
     private HashMap<Integer, Integer> index;
+
+    public Index() {
+        this.name = null;
+        this.columnNames = null;
+        this.index = new HashMap<>();
+    }
 
     public Index(String name, List<String> columnNames) {
         this.name = name;
