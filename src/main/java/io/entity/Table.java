@@ -4,6 +4,7 @@ import com.google.gson.annotations.Expose;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
@@ -45,12 +46,6 @@ public class Table implements Serializable {
         this.tableHeaderColumns = tableHeaderColumns;
     }
 
-    public void setListRows(List<TableRow> listRows) {
-
-        if (this.tableHeaderColumns != null && !this.tableHeaderColumns.getHeaderColumns().isEmpty()) {
-            this.listRows = listRows;
-        }
-    }
 
     // Add an index to the list of indexes
     public void addIndex(Index index) {
@@ -82,5 +77,9 @@ public class Table implements Serializable {
                 ", listRows=" + listRows +
                 ", indexes=" + indexes +
                 '}';
+    }
+
+    public boolean hasColumn(String columnName) {
+        return tableHeaderColumns.getHeaderColumns().containsKey(columnName);
     }
 }
