@@ -61,6 +61,10 @@ public class CentralNode {
             return Response.status(Response.Status.BAD_REQUEST).entity(formatErrorMessage("The table does not exist")).build();
         }
         if (index.getName() != null && index.getColumnNames() != null) {
+            if (index.getColumnNames().isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST).entity(formatErrorMessage("The index must have at least one column")).build();
+            }
+
             for (String field : index.getColumnNames()) {
                 if (!this.app.getTableByName(tableName).getTableHeaderColumns().getHeaderColumns().containsKey(field)) {
                     return Response.status(Response.Status.BAD_REQUEST).entity(formatErrorMessage("This table doesn't contains the field : " + field)).build();
