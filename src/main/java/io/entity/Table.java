@@ -17,13 +17,13 @@ public class Table implements Serializable {
     private String name;
     @Expose
     private TableHeaderColumns tableHeaderColumns;
-    private List<TableRow> listRows;
+    private HashMap<Identifier, List<String>> rows;
     private List<Index> indexes;
 
     public Table() {
         this.name = null;
         this.tableHeaderColumns = null;
-        this.listRows = new ArrayList<>();
+        this.rows = new HashMap<>();
         this.indexes = new ArrayList<Index>();
     }
 
@@ -74,7 +74,7 @@ public class Table implements Serializable {
         return "Table{" +
                 "name='" + name + '\'' +
                 ", tableHeaderColumns=" + tableHeaderColumns +
-                ", listRows=" + listRows +
+                ", rows=" + rows +
                 ", indexes=" + indexes +
                 '}';
     }
