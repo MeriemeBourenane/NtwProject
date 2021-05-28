@@ -29,7 +29,7 @@ public class CentralNode {
     }
 
     @POST
-    @Path("/create-table")
+    @Path("/tables")
     public Response createTable(Table table) {
         // the central node will receive the first request
         // processing the request create table
