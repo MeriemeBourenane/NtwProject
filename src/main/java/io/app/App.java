@@ -67,4 +67,13 @@ public class App {
                 && ! index.getColumnNames().isEmpty()
                 && index.getColumnNames().stream().allMatch(getTableByName(tableName)::hasColumn);
     }
+
+    public boolean isValidSearch(String tableName, List<String> columns, List<String> values) {
+        return columns != null
+                && values != null
+                && columns.size() == values.size()
+                && columns.stream().allMatch(getTableByName(tableName)::hasColumn);
+    }
+
+
 }

@@ -116,21 +116,25 @@ public class CentralNode {
     }
 
     @GET
-    @Path("/get-table-by-name/{name}")
-    public Table getTable(@PathParam("name") String name) {
-        System.out.println(this.app.getTableByName(name));
-        return this.app.getTableByName(name);
+    @Path("/tables/{tableName}/indexes")
+    public Response getIndex(@PathParam("tableName") String tableName,
+                             @QueryParam("column") List<String> columnsName,
+                             @QueryParam("value") List<String> values) {
+        logger.debug("Entering /tables/{tableName}/indexes");
+
+        Table table = this.app.getTableByName(tableName);
+        if (table == null) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(formatErrorMessage("The table does not exist")).build();
+        }
+        logger.debug("Column: " + columnsName + " Values: " + values);
+        if (app.isValidSearch(tableName, columnsName, values)) {
+            return Response.status(Response.Status.OK).build();
+
+        }
+
+        return Response.status(Response.Status.BAD_REQUEST).entity(formatErrorMessage("The object is incorrect")).build();
     }
 
-    /*
-    @POST
-    @Path("/get-table/{aTest}")
-    public Table setTestTable(@PathParam("aTest") String aTest) {
-        this.app.getaTable().setTest(aTest);
-        System.out.println(this.app.getaTable());
-        return this.app.getaTable();
-    }
-    */
 
 
 
