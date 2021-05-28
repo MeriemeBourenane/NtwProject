@@ -4,6 +4,7 @@ import io.app.App;
 import io.entity.Index;
 import io.entity.Table;
 import io.entity.TestObj;
+import org.apache.log4j.Logger;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -20,6 +21,9 @@ import java.util.List;
 public class CentralNode {
 
     private App app = App.getApp();
+    private static Logger logger = Logger.getLogger(CentralNode.class);
+
+
 
     @POST
     @Path("/create-table")
