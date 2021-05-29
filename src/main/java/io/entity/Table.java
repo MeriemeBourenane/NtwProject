@@ -16,13 +16,13 @@ public class Table implements Serializable {
     @Expose
     private String name;
     @Expose
-    private TableHeaderColumns tableHeaderColumns;
+    private List<HeaderColumn> columnList;
     private HashMap<Identifier, List<String>> rows;
     private List<Index> indexes;
 
     public Table() {
         this.name = null;
-        this.tableHeaderColumns = null;
+        this.columnList = null;
         this.rows = new HashMap<>();
         this.indexes = new ArrayList<Index>();
     }
@@ -35,17 +35,6 @@ public class Table implements Serializable {
     public String getName() {
         return this.name;
     }
-
-    public TableHeaderColumns getTableHeaderColumns() {
-
-        return tableHeaderColumns;
-    }
-
-    public void setTableHeaderColumns(TableHeaderColumns tableHeaderColumns) {
-
-        this.tableHeaderColumns = tableHeaderColumns;
-    }
-
 
     // Add an index to the list of indexes
     public void addIndex(Index index) {
@@ -73,13 +62,18 @@ public class Table implements Serializable {
     public String toString() {
         return "Table{" +
                 "name='" + name + '\'' +
-                ", tableHeaderColumns=" + tableHeaderColumns +
+                ", columnList=" + columnList +
                 ", rows=" + rows +
                 ", indexes=" + indexes +
                 '}';
     }
 
     public boolean hasColumn(String columnName) {
-        return tableHeaderColumns.getHeaderColumns().containsKey(columnName);
+        return columnList.stream().anyMatch(column -> column.getName().equals(columnName));
+    }
+    public List<HeaderColumn> getColumnList() {
+        return columnList;
+    }
+
     }
 }

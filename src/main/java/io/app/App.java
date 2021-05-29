@@ -54,9 +54,9 @@ public class App {
     public boolean isValidTable(Table table) {
         return table != null
                 && table.getName() != null
-                && table.getTableHeaderColumns() != null
+                && table.getColumnList() != null
                 && ! hasTable(table.getName())
-                && ! table.getTableHeaderColumns().getHeaderColumns().isEmpty();
+                && ! table.getColumnList().isEmpty();
     }
 
     public boolean isValidIndex(String tableName, Index index) {
