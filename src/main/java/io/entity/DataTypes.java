@@ -1,15 +1,23 @@
 package io.entity;
 
+import io.entity.type.*;
+
+import java.util.Date;
+
 public enum DataTypes {
 
-    STRING("String"),
-    INTEGER("Integer"),
-    DATE("Date"),
-    FLOAT("Float");
+    STRING(StringProperty.class),
+    INTEGER(IntegerProperty.class),
+    DATE(DateProperty.class),
+    FLOAT(FloatProperty.class);
 
-    public final String value;
+    public Class<? extends Property> type;
 
-    private DataTypes(String value) {
-        this.value = value;
+    private DataTypes(Class<? extends Property> value) {
+        this.type = value;
+    }
+
+    public Class<? extends Property> getType() {
+        return type;
     }
 }
