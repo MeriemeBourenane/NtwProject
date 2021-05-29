@@ -1,5 +1,7 @@
 package io.api.nodes;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import io.app.App;
 import io.entity.Index;
 import io.entity.Table;
@@ -8,8 +10,10 @@ import org.jboss.resteasy.plugins.providers.multipart.InputPart;
 import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
 
 import javax.ws.rs.*;
+import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.StreamingOutput;
 import java.io.*;
 import java.util.*;
 
@@ -126,6 +130,7 @@ public class CentralNode {
         return Response.status(Response.Status.OK).build();
     }
 
+    // WARNING: We must have an index with these columns
     @GET
     @Path("/tables/{tableName}/indexes")
     public Response getIndex(@PathParam("tableName") String tableName,
@@ -139,8 +144,52 @@ public class CentralNode {
         }
         logger.debug("Column: " + columnsName + " Values: " + values);
         if (app.isValidSearch(tableName, columnsName, values)) {
-            return Response.status(Response.Status.OK).build();
+            // Check that there is an index with these columns
+            Optional<Index> appropriateIndex = table.getIndexes().stream().filter(i -> i.getColumnNames().equals(columnsName)).findFirst();
 
+            // TODO: Improve without allocating new memory
+            Map<String, String> valueMap = new HashMap<>();
+            for (int i = 0; i < columnsName.size(); i++) {
+                valueMap.put(columnsName.get(i), values.get(i));
+            }
+
+            if (appropriateIndex.isPresent()) {
+                // Reorder the values
+                List<String> identifierArray = new ArrayList<>();
+                for (String columnName : appropriateIndex.get().getColumnNames()) {
+                    identifierArray.add(valueMap.get(columnName));
+                }
+                String targetValue = String.join(",", identifierArray);
+
+                List<String> result = appropriateIndex.get().getValues().getOrDefault(targetValue, new ArrayList<>());
+
+                CacheControl cacheControl = new CacheControl();
+                cacheControl.setNoCache(true);
+                cacheControl.setMaxAge(-1);
+                cacheControl.setMustRevalidate(true);
+                return Response.status(Response.Status.OK).cacheControl(cacheControl).entity((StreamingOutput) outputStream -> {
+                    // Start streaming the data
+                    try (PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(outputStream)))) {
+
+                        writer.print("[");
+                        boolean firstElement = true;
+                        for (String res : result) {
+                            if (firstElement) {
+                                firstElement = false;
+                            } else {
+                                writer.write(",");
+                            }
+                            writer.write("\"" + res + "\"");
+                        }
+
+                        // Done!
+                        writer.print("]");
+                    }
+                }).build();
+            } else {
+                return Response.status(Response.Status.BAD_REQUEST).entity(formatErrorMessage("No index is matching your research")).build();
+
+            }
         }
 
         return Response.status(Response.Status.BAD_REQUEST).entity(formatErrorMessage("The object is incorrect")).build();
