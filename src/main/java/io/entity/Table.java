@@ -17,6 +17,7 @@ public class Table implements Serializable {
     private String name;
     @Expose
     private List<HeaderColumn> columnList;
+    private HashMap<String, Integer> columnIndiceMap;
     private HashMap<Identifier, List<String>> rows;
     private List<Index> indexes;
 
@@ -24,6 +25,7 @@ public class Table implements Serializable {
         this.name = null;
         this.columnList = null;
         this.rows = new HashMap<>();
+        this.columnIndiceMap = new HashMap<>();
         this.indexes = new ArrayList<Index>();
     }
 
@@ -73,6 +75,10 @@ public class Table implements Serializable {
     }
     public List<HeaderColumn> getColumnList() {
         return columnList;
+    }
+
+    public HashMap<String, Integer> getColumnIndiceMap() {
+        return columnIndiceMap;
     }
 
     }

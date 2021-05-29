@@ -41,6 +41,13 @@ public class CentralNode {
         if (app.isValidTable(table)) {
             logger.info("The object is valid");
             this.app.addTable(table);
+
+            // Create ColumnName -> index Map
+            for (int i = 0; i < table.getColumnList().size(); i++) {
+                String columnName = table.getColumnList().get(i).getName();
+                table.getColumnIndiceMap().put(columnName, i);
+            }
+
             logger.debug(table);
             return Response.status(Response.Status.CREATED).build();
         }
