@@ -79,6 +79,11 @@ public class CentralNode {
                             MultipartFormDataInput input) {
         logger.debug("Loaded CSV");
 
+        Table table = this.app.getTableByName(tableName);
+        if (table == null) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(formatErrorMessage("The table does not exist")).build();
+        }
+
         //Get API input data
         Map<String, List<InputPart>> uploadForm = input.getFormDataMap();
         logger.debug(uploadForm);
