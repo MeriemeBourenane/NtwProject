@@ -20,7 +20,7 @@ public class Index implements Serializable {
      * String is the value of the columns concatenated with ,
      * List<Identifier> is the list of rows with this value
      */
-    private HashMap<String, List<Identifier>> values;
+    private HashMap<String, List<String>> values;
 
     public Index() {
         this.name = null;
@@ -52,4 +52,7 @@ public class Index implements Serializable {
                 '}';
     }
 
+    public HashMap<String, List<String>> getValues() {
+        return values;
+    }
 }
