@@ -18,7 +18,8 @@ public class Table implements Serializable {
     @Expose
     private List<HeaderColumn> columnList;
     private HashMap<String, Integer> columnIndiceMap;
-    private HashMap<Identifier, List<String>> rows;
+
+    private HashMap<Identifier, String> rows;
     private List<Index> indexes;
 
     public Table() {
@@ -81,5 +82,7 @@ public class Table implements Serializable {
         return columnIndiceMap;
     }
 
+    public HashMap<Identifier, String> getRows() {
+        return rows;
     }
 }

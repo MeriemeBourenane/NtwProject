@@ -1,5 +1,7 @@
 package io.entity;
 
+import java.util.UUID;
+
 public class Identifier {
 
     private String id;
@@ -8,8 +10,8 @@ public class Identifier {
         this.id = null;
     }
 
-    public Identifier(String id) {
-        this.id = id;
+    public Identifier(UUID id) {
+        this.id = id.toString();
     }
 
     public String getId() {
