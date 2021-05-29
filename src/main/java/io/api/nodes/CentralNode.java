@@ -11,8 +11,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.*;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * The central node will receive request and will give instructions to the slave nodes
@@ -93,21 +92,13 @@ public class CentralNode {
 
         //Get API input data
         Map<String, List<InputPart>> uploadForm = input.getFormDataMap();
-        logger.debug(uploadForm);
-        //Get file name
-        String fileName = "";
-        try {
-            fileName = uploadForm.get("fileName").get(0).getBodyAsString();
-            logger.info("Get the file " + fileName);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
         //Get file data to save
         List<InputPart> inputParts = uploadForm.get("attachment");
 
         for (InputPart inputPart : inputParts)
         {
+            boolean firstLine = true;
             try
             {
 
@@ -115,13 +106,21 @@ public class CentralNode {
                 InputStream inputStream = inputPart.getBody(InputStream.class, null);
                 BufferedReader bufferReader = new BufferedReader(new InputStreamReader(inputStream));
                 while (bufferReader.ready()) {
-                    bufferReader.readLine();
+                    String line = bufferReader.readLine();
+                    if (firstLine) {
+                        firstLine = false;
+                        continue;
+                    }
+                    // Load the data into the table
+                    if (! table.loadRow(line)) {
+                        return Response.status(Response.Status.BAD_REQUEST).build();
+                    }
                 }
-                System.out.println("Success !!!!!");
             }
             catch (Exception e)
             {
                 e.printStackTrace();
+                return Response.status(Response.Status.SERVICE_UNAVAILABLE).build();
             }
         }
         return Response.status(Response.Status.OK).build();
