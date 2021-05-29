@@ -1,8 +1,14 @@
 package io.app;
 
+import io.api.nodes.CentralNode;
 import io.entity.Index;
 import io.entity.Table;
+import org.apache.log4j.Logger;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,9 +18,30 @@ public class App {
     private Table aTable;
     private List<Table> tables;
 
+    private List<InetSocketAddress> peers;
+    private final static String networkPath = "/var/ntw/config/network.txt";
+    private static Logger logger = Logger.getLogger(App.class);
+
+
+
     private App() {
         this.aTable = new Table();
         this.tables = new ArrayList<Table>();
+        this.peers = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(networkPath))) {
+            String line = br.readLine();
+
+            while (line != null) {
+                String[] tokens = line.split(":");
+                peers.add(new InetSocketAddress(tokens[0], Integer.valueOf(tokens[1])));
+                logger.info("Adding new peer (" + tokens[0] + ","+ Integer.valueOf(tokens[1])+")");
+                line = br.readLine();
+            }
+        } catch (IOException e) {
+            logger.error("Error while reading network files");
+            return;
+        }
+
     }
 
     public static App getApp() {
@@ -69,11 +96,13 @@ public class App {
     }
 
     public boolean isValidSearch(String tableName, List<String> columns, List<String> values) {
+        // TODO: Add type check
         return columns != null
                 && values != null
                 && columns.size() == values.size()
                 && columns.stream().allMatch(getTableByName(tableName)::hasColumn);
     }
+
 
 
 }
