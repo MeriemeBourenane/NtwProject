@@ -1,8 +1,8 @@
 package io.app;
 
-import io.api.nodes.CentralNode;
 import io.entity.Index;
 import io.entity.Table;
+import okhttp3.*;
 import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class App {
 
@@ -101,6 +102,86 @@ public class App {
                 && values != null
                 && columns.size() == values.size()
                 && columns.stream().allMatch(getTableByName(tableName)::hasColumn);
+    }
+
+    public boolean sendToPeers(Request.Builder requestBuilder, String method) {
+        List<Thread> threadList = new ArrayList<>();
+        for (InetSocketAddress address :
+                peers) {
+            Request request = requestBuilder.url("http://" + address.getAddress().getHostAddress() + ":" + address.getPort() + "/api/central-node/forward/" + method).build();
+            Thread th = new Thread(() -> {
+                OkHttpClient client = new OkHttpClient().newBuilder().build();
+                try {
+                    Response response = client.newCall(request).execute();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+            threadList.add(th);
+            th.start();
+        }
+
+        for (Thread th: threadList) {
+            try {
+                th.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        return true;
+
+    }
+
+    public boolean sendToPeers(Request.Builder requestBuilder, String method, List<StringBuilder> data) {
+        List<Thread> threadList = new ArrayList<>();
+        for (int i = 0; i < peers.size(); i++) {
+            InetSocketAddress address = peers.get(i);
+            StringBuilder peerData = data.get(i);
+            // Check that there is any data to send
+            if (peerData.length() == 0) {
+                continue;
+            }
+            RequestBody body = new MultipartBody.Builder().setType(MultipartBody.FORM)
+                    .addFormDataPart("attachment", "forward",
+                            RequestBody.create(
+                                    peerData.toString(), MediaType.parse("application/octet-stream")))
+                    .build();
+            Request request = requestBuilder
+                    .url("http://" + address.getAddress().getHostAddress() + ":" + address.getPort() + "/api/central-node/forward/" + method)
+                    .method("POST", body)
+                    .build();
+            Thread th = new Thread(() -> {
+                OkHttpClient client = new OkHttpClient().newBuilder()
+                        .writeTimeout(0, TimeUnit.MILLISECONDS)
+                        .callTimeout(0, TimeUnit.MILLISECONDS)
+                        .readTimeout(0, TimeUnit.MILLISECONDS)
+                        .connectTimeout(0, TimeUnit.MILLISECONDS)
+                        .build();
+                try {
+                    Response response = client.newCall(request).execute();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+            threadList.add(th);
+            th.start();
+        }
+
+        for (Thread th : threadList) {
+            try {
+                th.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        data.forEach(s -> s.setLength(0));
+        return true;
+
+    }
+
+    public int getNumberOfPeers() {
+        return peers.size();
     }
 
 
