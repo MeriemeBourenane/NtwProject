@@ -149,6 +149,9 @@ public class CentralNode {
         int numberOfPeers = app.getNumberOfPeers();
         int batch = 1000;
         int currentLines = 0;
+        // if 0 : send row to another peer
+        // if 1 : send row to another peer
+        // if 2 : keep the row the current central node
         int currentPeer = 0;
         List<StringBuilder> peersBuffer = new ArrayList<>();
         for (int i = 0; i < numberOfPeers; i++) {
@@ -169,6 +172,7 @@ public class CentralNode {
                         firstLine = false;
                         continue;
                     }
+                    // In central node
                     if (currentPeer == numberOfPeers) {
                         // Load the data into the table
                         if (!table.loadRow(line)) {
@@ -250,12 +254,29 @@ public class CentralNode {
         return Response.status(Response.Status.OK).build();
     }
 
-    // WARNING: We must have an index with these columns
     @GET
     @Path("/tables/{tableName}/indexes")
     public Response getIndex(@PathParam("tableName") String tableName,
                              @QueryParam("column") List<String> columnsName,
                              @QueryParam("value") List<String> values) {
+        return getIndex(tableName, columnsName, values, false);
+    }
+
+    @GET
+    @Path("/forward/tables/{tableName}/indexes")
+    public Response getIndexForwarded(@PathParam("tableName") String tableName,
+                             @QueryParam("column") List<String> columnsName,
+                             @QueryParam("value") List<String> values) {
+        return getIndex(tableName, columnsName, values, true);
+    }
+
+
+
+    // WARNING: We must have an index with these columns
+    public Response getIndex(String tableName,
+                             List<String> columnsName,
+                             List<String> values,
+                             boolean forwarded) {
         logger.debug("Entering /tables/{tableName}/indexes");
 
         Table table = this.app.getTableByName(tableName);
@@ -268,6 +289,7 @@ public class CentralNode {
             Optional<Index> appropriateIndex = table.getIndexes().stream().filter(i -> i.getColumnNames().equals(columnsName)).findFirst();
 
             // TODO: Improve without allocating new memory
+            // Map with column name as key and value as value
             Map<String, String> valueMap = new HashMap<>();
             for (int i = 0; i < columnsName.size(); i++) {
                 valueMap.put(columnsName.get(i), values.get(i));
@@ -281,17 +303,53 @@ public class CentralNode {
                 }
                 String targetValue = String.join(",", identifierArray);
 
+                // Find the target value aka the key in the appropriate index and get the corresponding list of rows
                 List<String> result = appropriateIndex.get().getValues().getOrDefault(targetValue, new ArrayList<>());
 
+                // Send row indexes to peers
+                List<BufferedSource> peerBufferedSource = null;
+                if (!forwarded) {
+                    // Generate string with params to send in the url
+                    String paramsUrl = "";
+                    int counter = 1;
+                    for(Map.Entry<String, String> entry: valueMap.entrySet()) {
+                        paramsUrl += "column=" + entry.getKey();
+                        paramsUrl += "&";
+                        paramsUrl += "value=" + entry.getValue();
+                        if (counter != valueMap.size()) {
+                            paramsUrl += "&";
+                        }
+                        counter ++;
+                    }
+
+                    Request.Builder request = new Request.Builder()
+                            .method("GET",  null )
+                            .addHeader("Content-Type", "application/json");
+                    peerBufferedSource = app.sendToPeers(request, "tables/" + tableName + "/indexes", paramsUrl);
+                }
+
+
+                // Problem: for some search, there are too many result (aka lines) and we overpass the heap space
+                // Solution: we send the lines as a stream
                 CacheControl cacheControl = new CacheControl();
                 cacheControl.setNoCache(true);
                 cacheControl.setMaxAge(-1);
                 cacheControl.setMustRevalidate(true);
+                // cahceControl : ask the server NOT to store any values in cache -> otherwise added data
+                // entity : the body to send
+                // The entity needs to be sent line by line$
+                // create an output stream to send lines
+                List<BufferedSource> finalPeerBufferedSource = peerBufferedSource;
                 return Response.status(Response.Status.OK).cacheControl(cacheControl).entity((StreamingOutput) outputStream -> {
                     // Start streaming the data
+                    // The output stream is used to create a Printer
+                    // Printer allows us to write data in this output stream
                     try (PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(outputStream)))) {
+                        // Forging the line to write in the output stream
+                        if (!forwarded) {
+                            writer.print("[");
+                        }
 
-                        writer.print("[");
                         boolean firstElement = true;
                         for (String res : result) {
                             if (firstElement) {
@@ -299,11 +357,33 @@ public class CentralNode {
                             } else {
                                 writer.write(",");
                             }
+                            // Write (aka send) the line
                             writer.write("\"" + res + "\"");
                         }
 
-                        // Done!
-                        writer.print("]");
+                        if (!forwarded) {
+                            // Send data from the source into the client response
+                            finalPeerBufferedSource.stream().forEach(bf -> {
+                                writer.write(",");
+                                Buffer buffer = new Buffer();
+                                try {
+                                    while (!bf.exhausted()) {
+                                        long count = bf.read(buffer, 8192);
+                                        for (int j = 0; j < count; j++) {
+                                            writer.write(buffer.getByte(j));
+                                        }
+                                        buffer.clear();
+                                    }
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                            });
+
+                        }
+
+                        if (!forwarded) {
+                            writer.print("]");
+                        }
                     }
                 }).build();
             } else {

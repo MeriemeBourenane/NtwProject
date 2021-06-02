@@ -3,6 +3,7 @@ package io.app;
 import io.entity.Index;
 import io.entity.Table;
 import okhttp3.*;
+import okio.BufferedSource;
 import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
@@ -11,6 +12,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 public class App {
@@ -132,6 +134,37 @@ public class App {
 
     }
 
+    public List<BufferedSource> sendToPeers(Request.Builder requestBuilder, String method, String parameter) {
+        // Several thread will add their buffer into this list
+        List<BufferedSource> peerBufferSource = new CopyOnWriteArrayList<>();
+        List<Thread> threadList = new ArrayList<>();
+        for (InetSocketAddress address :
+                peers) {
+            Request request = requestBuilder.url("http://" + address.getAddress().getHostAddress() + ":" + address.getPort() + "/api/central-node/forward/" + method + "?" + parameter).build();
+            Thread th = new Thread(() -> {
+                OkHttpClient client = new OkHttpClient().newBuilder().build();
+                try {
+                    Response response = client.newCall(request).execute();
+                    peerBufferSource.add(response.body().source());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+            threadList.add(th);
+            th.start();
+        }
+
+        for (Thread th: threadList) {
+            try {
+                th.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        return peerBufferSource;
+
+    }
+
     public boolean sendToPeers(Request.Builder requestBuilder, String method, List<StringBuilder> data) {
         List<Thread> threadList = new ArrayList<>();
         for (int i = 0; i < peers.size(); i++) {
@@ -160,6 +193,7 @@ public class App {
                 try {
                     Response response = client.newCall(request).execute();
                 } catch (IOException e) {
+                    logger.error("Error while sending data");
                     e.printStackTrace();
                 }
             });
