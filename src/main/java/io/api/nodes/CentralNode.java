@@ -7,9 +7,11 @@ import io.entity.Index;
 import io.entity.Table;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import okio.*;
 import org.apache.log4j.Logger;
 import org.jboss.resteasy.plugins.providers.multipart.InputPart;
 import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
+import org.jetbrains.annotations.NotNull;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.CacheControl;
@@ -147,13 +149,15 @@ public class CentralNode {
         List<InputPart> inputParts = uploadForm.get("attachment");
 
         int numberOfPeers = app.getNumberOfPeers();
-        int batch = 1000;
+        int batch = 15003;
         int currentLines = 0;
+
         // if 0 : send row to another peer
         // if 1 : send row to another peer
         // if 2 : keep the row the current central node
         int currentPeer = 0;
         List<StringBuilder> peersBuffer = new ArrayList<>();
+
         for (int i = 0; i < numberOfPeers; i++) {
             peersBuffer.add(new StringBuilder());
         }
@@ -172,6 +176,7 @@ public class CentralNode {
                         firstLine = false;
                         continue;
                     }
+
                     // In central node
                     if (currentPeer == numberOfPeers) {
                         // Load the data into the table
@@ -180,6 +185,9 @@ public class CentralNode {
                         }
                         currentLines++;
                     } else {
+                        // In peers
+
+                        // Verify the size of lines
                         if (currentLines == batch) {
                             Request.Builder request = new Request.Builder()
                                     .addHeader("Content-Type", "multipart/form-data");
@@ -207,7 +215,7 @@ public class CentralNode {
                 .addHeader("Content-Type", "multipart/form-data");
         app.sendToPeers(request, "tables/" + tableName + "/csv", peersBuffer);
 
-        logger.debug("The size of the table is " + table.getIndexes().get(0).getValues().values().size());
+        logger.debug("The size of the table is " + table.getIndexes().get(0).getValues().values().stream().map(l -> l.size()).reduce(0, (l1, l2)  -> l1 + l2));
 
         return Response.status(Response.Status.OK).build();
     }
@@ -229,18 +237,19 @@ public class CentralNode {
 
         //Get file data to save
         List<InputPart> inputParts = uploadForm.get("attachment");
-
+        int counter = 0;
         for (InputPart inputPart : inputParts) {
             logger.debug("Reading a InputPart");
-            boolean firstLine = true;
             try {
                 // convert the uploaded file to inputstream
                 InputStream inputStream = inputPart.getBody(InputStream.class, null);
                 BufferedReader bufferReader = new BufferedReader(new InputStreamReader(inputStream));
                 while (bufferReader.ready()) {
                     String line = bufferReader.readLine();
+                    counter++;
                     // Load the data into the table
                     if (!table.loadRow(line)) {
+                        logger.debug("An error occurred : forwarding line loadcsvforward");
                         return Response.status(Response.Status.BAD_REQUEST).build();
                     }
                 }
@@ -250,7 +259,7 @@ public class CentralNode {
             }
         }
 
-        logger.debug("The size of the table is " + table.getIndexes().get(0).getValues().values().size());
+        logger.debug("Counter " +  counter + "The size of the table is " + table.getIndexes().get(0).getValues().values().stream().map(l -> l.size()).reduce(0, (l1, l2)  -> l1 + l2));
         return Response.status(Response.Status.OK).build();
     }
 
@@ -306,6 +315,7 @@ public class CentralNode {
                 // Find the target value aka the key in the appropriate index and get the corresponding list of rows
                 List<String> result = appropriateIndex.get().getValues().getOrDefault(targetValue, new ArrayList<>());
 
+
                 // Send row indexes to peers
                 List<BufferedSource> peerBufferedSource = null;
                 if (!forwarded) {
@@ -335,6 +345,7 @@ public class CentralNode {
                 cacheControl.setNoCache(true);
                 cacheControl.setMaxAge(-1);
                 cacheControl.setMustRevalidate(true);
+
                 // cahceControl : ask the server NOT to store any values in cache -> otherwise added data
                 // entity : the body to send
                 // The entity needs to be sent line by line$
@@ -394,7 +405,6 @@ public class CentralNode {
 
         return Response.status(Response.Status.BAD_REQUEST).entity(formatErrorMessage("The object is incorrect")).build();
     }
-
 
 
 
