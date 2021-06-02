@@ -91,16 +91,24 @@ public class Table implements Serializable {
         // Generate an ID
         Identifier rowIdentifier = new Identifier(UUID.randomUUID());
 
-        //List<Property> rowStored = new ArrayList<>();
+        // Parsing of the elements
         String[] tokens = row.split(",");
         for (int i = 0; i < tokens.length; i++) {
             String rowElement = tokens[i];
+            // recupere la definition de la colonne associee
             HeaderColumn column = columnList.get(i);
-            // TODO: Better use ?
+
+            // Verify types of elements
+
             Property property = null;
             Constructor<? extends Property> cons = null;
+
+            // Create an object of type Property dynamically
             try {
+                // Retrieve the constructor of the column
+                // Column is for example an Integer therefore we want to retrieve the constructor of IntegerProperty
                 cons = column.getType().getType().getConstructor();
+                // Create an instance of this class
                 property = cons.newInstance();
             } catch (NoSuchMethodException e) {
                 e.printStackTrace();
@@ -111,16 +119,16 @@ public class Table implements Serializable {
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             }
+            // The type doesn't exists -> no Class like IntegerProperty
             if (property == null) {
                 logger.debug("Error while parsing " + rowElement);
                 return false;
             }
+            // convert the element into the type of the column
             property.setValue(rowElement);
-            //rowStored.add(property);
-        }
 
-        // TODO: PutAll ?
-        //rows.put(rowIdentifier, row);
+            // TODO : verify the correct parsing
+        }
 
         // Compute Index
         for (Index index: indexes) {
